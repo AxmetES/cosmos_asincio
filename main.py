@@ -1,9 +1,10 @@
 import asyncio
-import time
 import curses
 import random
-from load_img import load_img
+import time
 from itertools import cycle
+
+from load_img import load_img
 
 SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
@@ -100,7 +101,7 @@ def read_controls(canvas):
     return rows_direction, columns_direction, space_pressed
 
 
-def draw_frame(canvas, text, start_row=5, start_column=35, negative=False):
+def draw_frame(canvas, text, start_row, start_column, negative=False):
     """Draw multiline text fragment on canvas, erase text instead of drawing if negative=True is specified."""
     rows_number, columns_number = canvas.getmaxyx()
 
@@ -124,12 +125,26 @@ def draw_frame(canvas, text, start_row=5, start_column=35, negative=False):
 
 
 async def animate_spaceship(canvas, images):
+    start_row = 30
+    start_column = 80
+    canvas_maxyx = canvas.getmaxyx()
+    max_x = canvas_maxyx[0]
+    max_y = canvas_maxyx[1]
+    # 72, 177
+    # f_rows, f_columns = get_frame_size(canvas)
+
     for item in cycle(images):
-        draw_frame(canvas=canvas, text=item,
-                   negative=False)
-        await asyncio.sleep(0)
+        rows_direction, columns_direction, space_pressed = read_controls(canvas=canvas)
+        start_row = start_row + rows_direction
+        start_column = start_column + columns_direction
+        draw_frame(canvas=canvas, text=item, start_row=start_row,
+                   start_column=start_column)
+
         canvas.refresh()
-        draw_frame(canvas=canvas, text=item,
+
+        await asyncio.sleep(0)
+        draw_frame(canvas=canvas, text=item, start_row=start_row,
+                   start_column=start_column,
                    negative=True)
 
 
@@ -142,9 +157,8 @@ def draw(canvas):
     x, y = window.getmaxyx()
 
     coroutines = [
-        blink(canvas, row=random.randint(0, x - 1), column=random.randint(0, y - 1), symbol=random.choice(symbol)) for
-        _
-        in range(50)]
+        blink(canvas, row=random.randint(0, x - 1), column=random.randint(0, y - 1),
+              symbol=random.choice(symbol)) for _ in range(50)]
 
     coroutines.append(animate_spaceship(canvas=canvas, images=images))
 
